@@ -1,0 +1,72 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+<script src="http://maps.google.com/maps/api/js?sensor=false"></script>
+<script>
+var map;
+var lat=[];
+var long=[];
+function initialize() {
+    map = new google.maps.Map(document.getElementById('map'), {
+        zoom: 5,
+        center: new google.maps.LatLng(41.879535, -87.624333),
+        mapTypeId: google.maps.MapTypeId.SATELLITE,
+    });
+    google.maps.event.addListener(map, 'click', function(event) {
+    placeMarker(event.latLng);
+    });
+
+
+}
+function placeMarker(location) {
+      var marker = new google.maps.Marker({
+        position: location,
+        map: map,
+        draggable: true
+      });
+      var infowindow = new google.maps.InfoWindow({
+        content: 'Latitude: ' + location.lat() +
+        '<br>Longitude: ' + location.lng()
+      });
+      lat.push(location.lat())
+      long.push(location.lng())
+      infowindow.open(map,marker);
+    }
+function post(path, params, method) {
+    method = method || "post"; // Set method to post by default if not specified.
+
+    // The rest of this code assumes you are not using a library.
+    // It can be made less wordy if you use one.
+    var form = document.createElement("form");
+    form.setAttribute("method", method);
+    form.setAttribute("action", path);
+
+    for(var key in params) {
+        if(params.hasOwnProperty(key)) {
+            var hiddenField = document.createElement("input");
+            hiddenField.setAttribute("type", "hidden");
+            hiddenField.setAttribute("name", key);
+            hiddenField.setAttribute("value", params[key]);
+
+            form.appendChild(hiddenField);
+         }
+    }
+
+    document.body.appendChild(form);
+    form.submit();
+}
+
+</script>
+<style>
+    body {font-family: sans-serif}
+    #map {width: 500px; height: 300px}
+</style>
+</head>
+<body onload='initialize()'>
+    <div>Sequence: TOP LEFT corner and then BOTTOM RIGHT corner</div>
+    <div id=map></div>
+<div> Resolution(meters) : <input type="text" name="resolution" id="resolution"> </div>
+<div> <input type="button" value="Submit" onclick="post('http://192.168.124.166:8000/gmap/',{lat: lat,long: long,interval: document.getElementById('resolution').value})"> </div>
+</body>
+</html>
