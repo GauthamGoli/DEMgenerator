@@ -55,23 +55,67 @@ def index(request):
         writer = csv.writer(response)
         # Sending the request to google's servers
         # top letf and bottom left
-        elvtn_args = {'path':"%s,%s|%s,%s"%(l.coords.y,l.coords.x,r.coords.y,l.coords.x),'sensor':'false','samples': str(samples_y),'key':'AIzaSyBCUuGq287YOitrLrvArEK3iFTo63Vhix8'}
-        url = ELEVATION_BASE_URL + '?' + urllib.urlencode(elvtn_args)
-        print elvtn_args
-        print url
-        response_first = simplejson.load(urllib.urlopen(url))
-        print response_first
+        #elvtn_args = {'path':"%s,%s|%s,%s"%(l.coords.y,l.coords.x,r.coords.y,l.coords.x),'sensor':'false','samples': str(samples_y),'key':'AIzaSyBCUuGq287YOitrLrvArEK3iFTo63Vhix8'}
+        #url = ELEVATION_BASE_URL + '?' + urllib.urlencode(elvtn_args)
+        #print elvtn_args
+        #print url
+        #response_first = simplejson.load(urllib.urlopen(url))
+        #print response_first
         # top right and bottom right
-        elvtn_args1 = {'path':"%s,%s|%s,%s"%(l.coords.y,r.coords.x,r.coords.y,r.coords.x),'sensor':'false','samples': str(samples_y),'key':'AIzaSyBCUuGq287YOitrLrvArEK3iFTo63Vhix8'}
-        url1 = ELEVATION_BASE_URL + '?' + urllib.urlencode(elvtn_args1)
-        print elvtn_args1
-        response_second = simplejson.load(urllib.urlopen(url1))
-        print response_second
-        response_first['results'].pop()
-        response_second['results'].pop()
-        for resultset, resultset2 in zip(response_first['results'],response_second['results']):
-            print 'r'
-            elvtn_args_intermediate = {'path':"%s,%s|%s,%s"%(resultset['location']['lat'], resultset['location']['lng'], resultset2['location']['lat'], resultset2['location']['lng']), 'samples': str(samples_x), 'key' : 'AIzaSyBCUuGq287YOitrLrvArEK3iFTo63Vhix8'}
+        #elvtn_args1 = {'path':"%s,%s|%s,%s"%(l.coords.y,r.coords.x,r.coords.y,r.coords.x),'sensor':'false','samples': str(samples_y),'key':'AIzaSyBCUuGq287YOitrLrvArEK3iFTo63Vhix8'}
+        #url1 = ELEVATION_BASE_URL + '?' + urllib.urlencode(elvtn_args1)
+        #print elvtn_args1
+        #response_second = simplejson.load(urllib.urlopen(url1))
+        #print response_second
+        #response_first['results'].pop()
+        #response_second['results'].pop()
+        left_side_of_rectangle = zip(numpy.linspace(l.coords.y,r.coords.y,num=samples_y,dtype=numpy.float64),
+                                     numpy.linspace(l.coords.x,l.coords.x,num=samples_y,dtype=numpy.float64))
+        #right_side_of_rectangle will be same as left_side_of_rectangle
+        right_side_of_rectangle = left_side_of_rectangle
+        for row_number, resultset, resultset2 in enumerate(zip(left_side_of_rectangle,right_side_of_rectangle)):
+            print row_number
+            left_side_lat = resultset[0]
+            left_side_lng = resultset[1]
+            right_side_lat = resultset2[0]
+            right_side_lng = resultset2[1]
+
+            row_of_interest = zip(numpy.linspace(left_side_lat, right_side_lat, num=samples_x, dtype=numpy.float64),
+                                  numpy.linspace(left_side_lng, right_side_lng, num=samples_x, dtype=numpy.float64))
+
+            #crafting the request
+            # format
+            if len(row_of_interest)>512:
+                factor = len(row_of_interest)/512
+            for fact in range(1,factor+1):
+                left_side_lat_intermediate, left_side_lng_intermediate = row_of_interest[(fact-1)*512][0],\
+                                                                         row_of_interest[(fact-1)*512][1]
+                right_side_lat_intermediate, right_side_lng_intermediate = row_of_interest[(fact)*512-1][0],\
+                                                                           row_of_interest[(fact)*512-1][1]
+
+                elvtn_args_intermediate = {'path':"%s,%s|%s,%s"%(left_side_lat_intermediate, left_side_lng_intermediate,
+                                                                 right_side_lat_intermediate, right_side_lng_intermediate),
+                                           'samples': '512', 'key' : 'AIzaSyBCUuGq287YOitrLrvArEK3iFTo63Vhix8'}
+                url_intermediate = ELEVATION_BASE_URL + '?' + urllib.urlencode(elvtn_args_intermediate)
+                response_intermediate = simplejson.load(urllib.urlopen(url_intermediate))
+                #response_intermediate['results'].pop()
+                for resultset_intermediate in response_intermediate['results']:
+                    aoi.objects.create(lat=resultset_intermediate['location']['lat'], lng=resultset_intermediate['location']['lng'],
+                                       alt=resultset_intermediate['elevation'],
+                                       coords=fromstr('POINT(%s %s)' % (resultset_intermediate['location']['lng'], resultset_intermediate['location']['lat']), srid=4326 ))
+                    print [resultset_intermediate['location']['lat'], resultset_intermediate['location']['lng'],resultset_intermediate['elevation']],'created!'
+                    if [resultset_intermediate['location']['lat'], resultset_intermediate['location']['lng'],resultset_intermediate['elevation']]==[0, 0, -4941.75]:
+                        continue
+                    writer.writerow([resultset_intermediate['location']['lat'], resultset_intermediate['location']['lng'], resultset_intermediate['elevation']])
+            left_side_lat_intermediate, left_side_lng_intermediate = row_of_interest[factor*512][0],\
+                                                                     row_of_interest[factor*512][1]
+            right_side_lat_intermediate, right_side_lng_intermediate = row_of_interest[-1][0],\
+                                                                       row_of_interest[-1][1]
+
+            #elvtn_args_intermediate = {'path':"%s,%s|%s,%s"%(resultset['location']['lat'], resultset['location']['lng'], resultset2['location']['lat'], resultset2['location']['lng']), 'samples': str(samples_x), 'key' : 'AIzaSyBCUuGq287YOitrLrvArEK3iFTo63Vhix8'}
+            elvtn_args_intermediate = {'path':"%s,%s|%s,%s"%(left_side_lat_intermediate, left_side_lng_intermediate,
+                                                                 right_side_lat_intermediate, right_side_lng_intermediate),
+                                           'samples': '512', 'key' : 'AIzaSyBCUuGq287YOitrLrvArEK3iFTo63Vhix8'}
             url_intermediate = ELEVATION_BASE_URL + '?' + urllib.urlencode(elvtn_args_intermediate)
             response_intermediate = simplejson.load(urllib.urlopen(url_intermediate))
             #response_intermediate['results'].pop(0)
