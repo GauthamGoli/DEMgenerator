@@ -1,5 +1,5 @@
 from django.shortcuts import render, get_object_or_404
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from gmap.models import aoi,LineOi,subLineOi
 from django.contrib.gis.geos import Point,fromstr
@@ -11,15 +11,26 @@ import urllib
 import csv
 import utm
 from django.contrib.gis.measure import Distance
+from django.contrib.sites.shortcuts import get_current_site
 from PIL import Image
 import numpy
 from numpy import interp
 from geopy.distance import distance
 import gdal, osr
 import numpy as np
+from urlparse import urljoin
 
 ELEVATION_BASE_URL = 'https://maps.googleapis.com/maps/api/elevation/json'
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+STATIC_PATH = os.path.join(BASE_DIR,'static')
 
+def write_row_csv(data, file=os.path.join(STATIC_PATH,'data.csv')):
+    with open(file, 'a') as fp:
+        a = csv.writer(fp, delimiter=',')
+        #data = [['Me', 'You'],
+        #        ['293', '219'],
+        #        ['54', '13']]
+        a.writerows(data)
 
 @csrf_exempt
 def index(request):
@@ -50,9 +61,9 @@ def index(request):
         alt_image = Image.new(mode="L", size=(samples_x-1, samples_y-1))
         print samples_x, samples_y
         # Crafting the response for csv
-        response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = 'attachment; filename="somefilename.csv"'
-        writer = csv.writer(response)
+        #response = HttpResponse(content_type='text/csv')
+        #response['Content-Disposition'] = 'attachment; filename="somefilename.csv"'
+        #writer = csv.writer(response)
         # Sending the request to google's servers
         # top letf and bottom left
         #elvtn_args = {'path':"%s,%s|%s,%s"%(l.coords.y,l.coords.x,r.coords.y,l.coords.x),'sensor':'false','samples': str(samples_y),'key':'AIzaSyBCUuGq287YOitrLrvArEK3iFTo63Vhix8'}
@@ -72,9 +83,12 @@ def index(request):
         left_side_of_rectangle = zip(numpy.linspace(l.coords.y,r.coords.y,num=samples_y,dtype=numpy.float64),
                                      numpy.linspace(l.coords.x,l.coords.x,num=samples_y,dtype=numpy.float64))
         #right_side_of_rectangle will be same as left_side_of_rectangle
-        right_side_of_rectangle = left_side_of_rectangle
-        for row_number, resultset, resultset2 in enumerate(zip(left_side_of_rectangle,right_side_of_rectangle)):
+        right_side_of_rectangle = zip(numpy.linspace(l.coords.y,r.coords.y,num=samples_y,dtype=numpy.float64),
+                                     numpy.linspace(r.coords.x,r.coords.x,num=samples_y,dtype=numpy.float64))
+        for row_number, (resultset, resultset2) in enumerate(zip(left_side_of_rectangle,right_side_of_rectangle)):
             print row_number
+            if row_number==samples_y-1:
+                break
             left_side_lat = resultset[0]
             left_side_lng = resultset[1]
             right_side_lat = resultset2[0]
@@ -85,47 +99,50 @@ def index(request):
 
             #crafting the request
             # format
+            factor = 0
             if len(row_of_interest)>512:
                 factor = len(row_of_interest)/512
-            for fact in range(1,factor+1):
-                left_side_lat_intermediate, left_side_lng_intermediate = row_of_interest[(fact-1)*512][0],\
-                                                                         row_of_interest[(fact-1)*512][1]
-                right_side_lat_intermediate, right_side_lng_intermediate = row_of_interest[(fact)*512-1][0],\
-                                                                           row_of_interest[(fact)*512-1][1]
+                for fact in range(1,factor+1):
+                    left_side_lat_intermediate, left_side_lng_intermediate = row_of_interest[(fact-1)*512][0],\
+                                                                             row_of_interest[(fact-1)*512][1]
+                    right_side_lat_intermediate, right_side_lng_intermediate = row_of_interest[(fact)*512-1][0],\
+                                                                               row_of_interest[(fact)*512-1][1]
 
-                elvtn_args_intermediate = {'path':"%s,%s|%s,%s"%(left_side_lat_intermediate, left_side_lng_intermediate,
-                                                                 right_side_lat_intermediate, right_side_lng_intermediate),
-                                           'samples': '512', 'key' : 'AIzaSyBCUuGq287YOitrLrvArEK3iFTo63Vhix8'}
-                url_intermediate = ELEVATION_BASE_URL + '?' + urllib.urlencode(elvtn_args_intermediate)
-                response_intermediate = simplejson.load(urllib.urlopen(url_intermediate))
-                #response_intermediate['results'].pop()
-                for resultset_intermediate in response_intermediate['results']:
-                    aoi.objects.create(lat=resultset_intermediate['location']['lat'], lng=resultset_intermediate['location']['lng'],
-                                       alt=resultset_intermediate['elevation'],
-                                       coords=fromstr('POINT(%s %s)' % (resultset_intermediate['location']['lng'], resultset_intermediate['location']['lat']), srid=4326 ))
-                    print [resultset_intermediate['location']['lat'], resultset_intermediate['location']['lng'],resultset_intermediate['elevation']],'created!'
-                    if [resultset_intermediate['location']['lat'], resultset_intermediate['location']['lng'],resultset_intermediate['elevation']]==[0, 0, -4941.75]:
-                        continue
-                    writer.writerow([resultset_intermediate['location']['lat'], resultset_intermediate['location']['lng'], resultset_intermediate['elevation']])
+                    elvtn_args_intermediate = {'path':"%s,%s|%s,%s"%(left_side_lat_intermediate, left_side_lng_intermediate,
+                                                                     right_side_lat_intermediate, right_side_lng_intermediate),
+                                               'samples': '512', 'key' : 'AIzaSyBCUuGq287YOitrLrvArEK3iFTo63Vhix8'}
+                    url_intermediate = ELEVATION_BASE_URL + '?' + urllib.urlencode(elvtn_args_intermediate)
+                    response_intermediate = simplejson.load(urllib.urlopen(url_intermediate))
+                    #response_intermediate['results'].pop()
+                    for resultset_intermediate in response_intermediate['results']:
+                        aoi.objects.create(lat=resultset_intermediate['location']['lat'], lng=resultset_intermediate['location']['lng'],
+                                           alt=resultset_intermediate['elevation'],
+                                           coords=fromstr('POINT(%s %s)' % (resultset_intermediate['location']['lng'], resultset_intermediate['location']['lat']), srid=4326 ))
+                        print [resultset_intermediate['location']['lat'], resultset_intermediate['location']['lng'],resultset_intermediate['elevation']],'created!'
+                        if [resultset_intermediate['location']['lat'], resultset_intermediate['location']['lng'],resultset_intermediate['elevation']]==[0, 0, -4941.75]:
+                            continue
+                        write_row_csv([[resultset_intermediate['location']['lat'], resultset_intermediate['location']['lng'], resultset_intermediate['elevation']]],os.path.join(STATIC_PATH,'data.csv'))
             left_side_lat_intermediate, left_side_lng_intermediate = row_of_interest[factor*512][0],\
                                                                      row_of_interest[factor*512][1]
             right_side_lat_intermediate, right_side_lng_intermediate = row_of_interest[-1][0],\
                                                                        row_of_interest[-1][1]
 
             #elvtn_args_intermediate = {'path':"%s,%s|%s,%s"%(resultset['location']['lat'], resultset['location']['lng'], resultset2['location']['lat'], resultset2['location']['lng']), 'samples': str(samples_x), 'key' : 'AIzaSyBCUuGq287YOitrLrvArEK3iFTo63Vhix8'}
+
             elvtn_args_intermediate = {'path':"%s,%s|%s,%s"%(left_side_lat_intermediate, left_side_lng_intermediate,
                                                                  right_side_lat_intermediate, right_side_lng_intermediate),
-                                           'samples': '512', 'key' : 'AIzaSyBCUuGq287YOitrLrvArEK3iFTo63Vhix8'}
+                                           'samples': str(len(row_of_interest[factor*512:-1])), 'key' : 'AIzaSyBCUuGq287YOitrLrvArEK3iFTo63Vhix8'}
+            print 'samples number %s'%str(len(row_of_interest[factor*512:-1]))
             url_intermediate = ELEVATION_BASE_URL + '?' + urllib.urlencode(elvtn_args_intermediate)
             response_intermediate = simplejson.load(urllib.urlopen(url_intermediate))
             #response_intermediate['results'].pop(0)
-            response_intermediate['results'].pop()
+            #response_intermediate['results'].pop()
             for resultset_intermediate in response_intermediate['results']:
                 aoi.objects.create(lat=resultset_intermediate['location']['lat'], lng=resultset_intermediate['location']['lng'], alt=resultset_intermediate['elevation'], coords=fromstr('POINT(%s %s)' % (resultset_intermediate['location']['lng'], resultset_intermediate['location']['lat']), srid=4326 ))
                 print [resultset_intermediate['location']['lat'], resultset_intermediate['location']['lng'],resultset_intermediate['elevation']],'created!'
                 if [resultset_intermediate['location']['lat'], resultset_intermediate['location']['lng'],resultset_intermediate['elevation']]==[0, 0, -4941.75]:
                     continue
-                writer.writerow([resultset_intermediate['location']['lat'], resultset_intermediate['location']['lng'], resultset_intermediate['elevation']])
+                write_row_csv([[resultset_intermediate['location']['lat'], resultset_intermediate['location']['lng'], resultset_intermediate['elevation']]])
         alts = [e.alt for e in aoi.objects.order_by('pk')[2:] if e.alt != 0]
         print 'len alts',len(alts),'dims',(samples_x,samples_y)
         max_alt = max(alts)
@@ -141,6 +158,7 @@ def index(request):
         alt_image.save('C:\\Users\\admin.admin-PC1\\Desktop\\wgisp\\tiwaris\\static\\test.jpg')
         # GeoReferencing the image
         print 'geo-referencing'
+
 
         # for storing elevation in a separate layer
         # http://gis.stackexchange.com/questions/58517/python-gdal-save-array-as-raster-with-projection-from-other-file
@@ -194,15 +212,16 @@ def index(request):
         #dst_ds.GetRasterBand(1).WriteArray(alts_image_np)
         dst_ds.GetRasterBand(1).WriteArray(alts_np)
         dst_ds.FlushCache()
-        print os.getcwd()
-        if 'static' not in os.getcwd():
-            os.chdir(os.path.join(os.getcwd(),'static'))
+
+        os.chdir(STATIC_PATH)
         # http://gis.stackexchange.com/questions/116672/georeferencing-a-raster-using-gdal-and-python
         os.system('gdal_translate -of GTiff -a_ullr %s %s %s %s "testf.tiff" "final.tiff"'%(lng_left,lat_left,lng_right,lat_right))
         # Close files
         dst_ds = None
         src_ds = None
-
+        static_url_root = 'http://'+str(get_current_site(request))+'/static/'
+        print static_url_root
+        response = JsonResponse({'GeoReferenced Image Url':urljoin(static_url_root,'final.tiff'),'Elevation Data url':urljoin(static_url_root,'data.csv')})
         return response
 
 
