@@ -7,6 +7,7 @@
 var map;
 var lat=[];
 var long=[];
+var zoom_levels=[];
 function initialize() {
     map = new google.maps.Map(document.getElementById('map'), {
         zoom: 5,
@@ -31,6 +32,7 @@ function placeMarker(location) {
       });
       lat.push(location.lat())
       long.push(location.lng())
+      zoom_levels(map.getZoom())
       infowindow.open(map,marker);
     }
 function post(path, params, method) {
@@ -67,6 +69,6 @@ function post(path, params, method) {
     <div>Sequence: TOP LEFT corner and then BOTTOM RIGHT corner</div>
     <div id=map></div>
 <div> Resolution(meters) : <input type="text" name="resolution" id="resolution"> </div>
-<div> <input type="button" value="Submit" onclick="post('http://192.168.124.166:8000/gmap/',{lat: lat,long: long,interval: document.getElementById('resolution').value})"> </div>
+<div> <input type="button" value="Submit" onclick="post('http://192.168.124.166:8000/gmap/',{lat: lat,long: long,interval: document.getElementById('resolution').value,zoom_levels: zoom_levels})"> </div>
 </body>
 </html>
