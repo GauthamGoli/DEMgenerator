@@ -21,6 +21,7 @@ import numpy as np
 from urlparse import urljoin
 
 ELEVATION_BASE_URL = 'https://maps.googleapis.com/maps/api/elevation/json'
+STATIC_MAPS_BASE_URL = 'https://maps.googleapis.com/maps/api/staticmap?center=%s,%s&zoom=%s&size=512x514&key=AIzaSyC4II1SZHr235m0-y1JAutSYEiMr6UwoCk'
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STATIC_PATH = os.path.join(BASE_DIR,'static')
 
@@ -40,6 +41,8 @@ def index(request):
         numpy.set_printoptions(precision=15)
         lat_left, lat_right = map(float, request.POST['lat'].split(','))
         lng_left, lng_right = map(float, request.POST['long'].split(','))
+        zoom_level = sum(map(float, list(request.POST['zoom_levels'])))/2.0
+        print ' >> %s'%zoom_level
         resolution = Distance(m=float(request.POST['interval']))
         aoi.objects.all().delete()
         l = aoi(lat=lat_left, lng=lng_left, coords=fromstr('POINT(%s %s)' % (lng_left, lat_left), srid=4326))
@@ -219,8 +222,13 @@ def index(request):
         # Close files
         dst_ds = None
         src_ds = None
+        static_map = urllib.URLopener()
+        center_lat = (lat_left+lat_right)/2.0
+        center_lng = (lng_left+lng_right)/2.0
+        #zoom_level =
+        static_map_api_call_url = STATIC_MAPS_BASE_URL%(center_lat,center_lng,zoom_level)
+        static_map.retrieve()
         static_url_root = 'http://'+str(get_current_site(request))+'/static/'
-        print static_url_root
         response = JsonResponse({'GeoReferenced Image Url':urljoin(static_url_root,'final.tiff'),'Elevation Data url':urljoin(static_url_root,'data.csv')})
         return response
 
