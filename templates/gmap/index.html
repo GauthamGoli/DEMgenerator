@@ -32,7 +32,7 @@ function placeMarker(location) {
       });
       lat.push(location.lat())
       long.push(location.lng())
-      zoom_levels(map.getZoom())
+      zoom_levels.push(map.getZoom())
       infowindow.open(map,marker);
     }
 function post(path, params, method) {
