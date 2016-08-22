@@ -55,14 +55,14 @@ def index(request):
         writer = csv.writer(response)
         # Sending the request to google's servers
         # top letf and bottom left
-        elvtn_args = {'path':"%s,%s|%s,%s"%(l.coords.y,l.coords.x,r.coords.y,l.coords.x),'sensor':'false','samples': str(samples_y),'key':'AIzaSyBCUuGq287YOitrLrvArEK3iFTo63Vhix8'}
+        elvtn_args = {'path':"%s,%s|%s,%s"%(l.coords.y,l.coords.x,r.coords.y,l.coords.x),'sensor':'false','samples': str(samples_y),'key':'AIzaSyC_9Xk7DEorzDmF8oKzONZwQHRgQ4D-H9s'}
         url = ELEVATION_BASE_URL + '?' + urllib.urlencode(elvtn_args)
         print elvtn_args
         print url
         response_first = simplejson.load(urllib.urlopen(url))
         print response_first
         # top right and bottom right
-        elvtn_args1 = {'path':"%s,%s|%s,%s"%(l.coords.y,r.coords.x,r.coords.y,r.coords.x),'sensor':'false','samples': str(samples_y),'key':'AIzaSyBCUuGq287YOitrLrvArEK3iFTo63Vhix8'}
+        elvtn_args1 = {'path':"%s,%s|%s,%s"%(l.coords.y,r.coords.x,r.coords.y,r.coords.x),'sensor':'false','samples': str(samples_y),'key':'AIzaSyC_9Xk7DEorzDmF8oKzONZwQHRgQ4D-H9s'}
         url1 = ELEVATION_BASE_URL + '?' + urllib.urlencode(elvtn_args1)
         print elvtn_args1
         response_second = simplejson.load(urllib.urlopen(url1))
@@ -71,7 +71,7 @@ def index(request):
         response_second['results'].pop()
         for resultset, resultset2 in zip(response_first['results'],response_second['results']):
             print 'r'
-            elvtn_args_intermediate = {'path':"%s,%s|%s,%s"%(resultset['location']['lat'], resultset['location']['lng'], resultset2['location']['lat'], resultset2['location']['lng']), 'samples': str(samples_x), 'key' : 'AIzaSyBCUuGq287YOitrLrvArEK3iFTo63Vhix8'}
+            elvtn_args_intermediate = {'path':"%s,%s|%s,%s"%(resultset['location']['lat'], resultset['location']['lng'], resultset2['location']['lat'], resultset2['location']['lng']), 'samples': str(samples_x), 'key' : 'AIzaSyC_9Xk7DEorzDmF8oKzONZwQHRgQ4D-H9s'}
             url_intermediate = ELEVATION_BASE_URL + '?' + urllib.urlencode(elvtn_args_intermediate)
             response_intermediate = simplejson.load(urllib.urlopen(url_intermediate))
             #response_intermediate['results'].pop(0)
@@ -94,7 +94,9 @@ def index(request):
         # print 'final',alts
         alt_image.putdata(alts)
         print 'saving image'
-        alt_image.save('C:\\Users\\admin.admin-PC1\\Desktop\\wgisp\\tiwaris\\static\\test.jpg')
+        #alt_image.save('C:\\Users\\admin.admin-PC1\\Desktop\\wgisp\\tiwaris\\static\\test.jpg')
+	alt_image.save('/home/ibmcloud/geom/static/test.jpg')
+	
         # GeoReferencing the image
         print 'geo-referencing'
 
@@ -102,8 +104,10 @@ def index(request):
         # http://gis.stackexchange.com/questions/58517/python-gdal-save-array-as-raster-with-projection-from-other-file
         # http://stackoverflow.com/questions/21015674/list-object-has-no-attribute-shape
 
-        dst_filename='C:\\Users\\admin.admin-PC1\\Desktop\\wgisp\\tiwaris\\static\\testf.tiff'
-        src_ds = gdal.Open('C:\\Users\\admin.admin-PC1\\Desktop\\wgisp\\tiwaris\\static\\test.jpg')
+        #dst_filename='C:\\Users\\admin.admin-PC1\\Desktop\\wgisp\\tiwaris\\static\\testf.tiff'
+	dst_filename='/home/ibmcloud/geom/static/testf.tiff'
+        #src_ds = gdal.Open('C:\\Users\\admin.admin-PC1\\Desktop\\wgisp\\tiwaris\\static\\test.jpg')
+	src_ds = gdal.Open('/home/ibmcloud/geom/static/test.jpg')
         format = "GTiff"
         driver = gdal.GetDriverByName(format)
 
