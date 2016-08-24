@@ -98,8 +98,8 @@ def index(request):
         alt_image.putdata(alts)
         print 'saving image'
         #alt_image.save('C:\\Users\\admin.admin-PC1\\Desktop\\wgisp\\tiwaris\\static\\test.jpg')
-	    alt_image.save('/home/ibmcloud/geom/static/test_%s.jpg'%(time_stamp)
-	
+        alt_image.save('/home/ibmcloud/geom/static/test_%s.jpg'%(time_stamp)
+    
         # GeoReferencing the image
         print 'geo-referencing'
 
@@ -108,9 +108,9 @@ def index(request):
         # http://stackoverflow.com/questions/21015674/list-object-has-no-attribute-shape
 
         #dst_filename='C:\\Users\\admin.admin-PC1\\Desktop\\wgisp\\tiwaris\\static\\testf.tiff'
-	    dst_filename='/home/ibmcloud/geom/static/testf_%s.tiff'%(time_stamp)
+        dst_filename='/home/ibmcloud/geom/static/testf_%s.tiff'%(time_stamp)
         #src_ds = gdal.Open('C:\\Users\\admin.admin-PC1\\Desktop\\wgisp\\tiwaris\\static\\test.jpg')
-	    src_ds = gdal.Open('/home/ibmcloud/geom/static/test_%s.jpg'%(time_stamp))
+        src_ds = gdal.Open('/home/ibmcloud/geom/static/test_%s.jpg'%(time_stamp))
         format = "GTiff"
         driver = gdal.GetDriverByName(format)
 
