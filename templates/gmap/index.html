@@ -9,7 +9,7 @@
 	<!-- Latest compiled and minified JavaScript -->
 	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
 	<link href="http://159.122.251.165:8889/static/dashboard.css" rel="stylesheet">
-  <link href="http://159.122.251.165:8889/static/custom.css" rel="stylesheet">
+    <link href="http://159.122.251.165:8889/static/custom.css" rel="stylesheet">
 	<style>
 	    
 	    #map {width: 100%; height: 88%}
@@ -131,7 +131,7 @@ function post(path, params, method) {
           
         </div>
         <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
-          <div id=map></div><br>
+          <div id=map></div>
 <div> Resolution(meters) : <input type="text" name="resolution" id="resolution"> </div>
 <div> <input type="button" value="Submit" onclick="post('http://159.122.251.165:8889/gmap/',{lat: lat,long: long,interval: document.getElementById('resolution').value})"> </div>
         </div>
