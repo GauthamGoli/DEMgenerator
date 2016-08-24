@@ -98,7 +98,7 @@ def index(request):
         alt_image.putdata(alts)
         print 'saving image'
         #alt_image.save('C:\\Users\\admin.admin-PC1\\Desktop\\wgisp\\tiwaris\\static\\test.jpg')
-        alt_image.save('/home/ibmcloud/geom/static/test_%s.jpg'%(time_stamp)
+        alt_image.save('/home/ibmcloud/geom/static/test_%s.jpg'%(time_stamp))
     
         # GeoReferencing the image
         print 'geo-referencing'
