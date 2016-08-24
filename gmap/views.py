@@ -53,7 +53,7 @@ def index(request):
         #response = HttpResponse(content_type='text/csv')
         #response['Content-Disposition'] = 'attachment; filename="somefilename.csv"'
         time_stamp = datetime.datetime.now().strftime('%s')
-        file_name = "/home/ibmcloud/geom/static/altitude_%s"%(time_stamp)
+        file_name = "/home/ibmcloud/geom/static/altitude_%s.csv"%(time_stamp)
         csv_file = open(file_name,'a')
         writer = csv.writer(csv_file, delimiter=',')
         # Sending the request to google's servers
