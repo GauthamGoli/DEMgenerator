@@ -80,6 +80,8 @@ function post(path, params, method) {
     // We define what will happen if the data are successfully sent
     XHR.addEventListener("load", function(event) {
       console.log(event.target.responseText);
+      $("#tiff-button").attr("onclick","window.open('http://159.122.251.165:8889/static/testf_"+event.target.responseText+".tiff')");
+      $("#csv-button").attr("onclick","window.open('http://159.122.251.165:8889/static/altitude_"+event.target.responseText+".csv')");
       $(".btn").toggleClass('hidden');
     });
 
@@ -122,8 +124,8 @@ function post(path, params, method) {
         <div class="col-sm-3 col-md-2 sidebar">
           <ul class="nav nav-sidebar">
             <!--<li class="active"><a href="#">Download Tiff <span class="sr-only">(current)</span></a></li> -->
-            <li><button type="button" class="btn btn-default center-element hidden">Download Tiff</button></li><br>
-            <li><button type="button" class="btn btn-default center-element hidden">Download csv</button></li>
+            <li><button type="button" id="tiff-button" class="btn btn-default center-element hidden" onclick="">Download Tiff</button></li><br>
+            <li><button type="button" id="csv-button" class="btn btn-default center-element hidden" onclick="">Download csv</button></li>
             
           </ul>
           
